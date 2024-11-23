@@ -1,14 +1,22 @@
-// components/ExperienciaForm.js
 import { useState, useEffect } from 'react';
 
-export default function ExperienciaForm({ onSubmit }) {
+export default function ExperienciaForm({ onSubmit, initialData = null }) {
   const [description, setDescription] = useState('');
   const [owner, setOwner] = useState('');
   const [participants, setParticipants] = useState([]);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
 
-  // Fetch de los usuarios disponibles desde la API
+  // Sincronizar los datos iniciales (initialData) con el estado local
+  useEffect(() => {
+    if (initialData) {
+      setDescription(initialData.description || '');
+      setOwner(initialData.owner || '');
+      setParticipants(initialData.participants || []);
+    }
+  }, [initialData]); // Se ejecuta cada vez que initialData cambia
+
+  // Cargar usuarios desde el backend
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -24,18 +32,17 @@ export default function ExperienciaForm({ onSubmit }) {
     fetchUsers();
   }, []);
 
-  // Manejo del envío del formulario
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Verificación de que al menos la descripción y el dueño estén completos
     if (description && owner) {
-      const newExperiencia = {
+      const experienciaData = {
+        ...initialData, // Incluye el ID si existe
         description,
         owner,
         participants,
       };
-      onSubmit(newExperiencia); // Llama a onSubmit para añadir experiencia
+      onSubmit(experienciaData);
     } else {
       alert('Debes completar todos los campos');
     }
@@ -44,20 +51,20 @@ export default function ExperienciaForm({ onSubmit }) {
   if (loadingUsers) return <p>Cargando usuarios...</p>;
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2-form>Lista de Experiencias</h2-form>
+    <form key={initialData?._id || 'new'} onSubmit={handleSubmit}>
+      <h2>{initialData ? 'Editar Experiencia' : 'Crear Experiencia'}</h2>
       <div>
         <label>Descripción de la experiencia:</label>
-        <input className='formdiv'
-          type="text" 
+        <input
+          type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
-      
+  
       <div>
         <label>Seleccionar dueño:</label>
-        <select className='formdiv' value={owner} onChange={(e) => setOwner(e.target.value)}>
+        <select value={owner} onChange={(e) => setOwner(e.target.value)}>
           <option value="">--Selecciona un usuario--</option>
           {users.map((user) => (
             <option key={user._id} value={user._id}>
@@ -66,13 +73,20 @@ export default function ExperienciaForm({ onSubmit }) {
           ))}
         </select>
       </div>
-
+  
       <div>
         <label>Seleccionar participantes:</label>
-        <select className='formdiv' multiple value={participants} onChange={(e) => {
-          const selectedParticipants = Array.from(e.target.selectedOptions, option => option.value);
-          setParticipants(selectedParticipants);
-        }}>
+        <select
+          multiple
+          value={participants}
+          onChange={(e) => {
+            const selectedParticipants = Array.from(
+              e.target.selectedOptions,
+              (option) => option.value
+            );
+            setParticipants(selectedParticipants);
+          }}
+        >
           {users.map((user) => (
             <option key={user._id} value={user._id}>
               {user.name}
@@ -80,8 +94,9 @@ export default function ExperienciaForm({ onSubmit }) {
           ))}
         </select>
       </div>
-
-      <button type="submit">Crear Experiencia</button>
+  
+      <button type="submit">{initialData ? 'Actualizar' : 'Crear'}</button>
     </form>
   );
+  
 }

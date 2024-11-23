@@ -6,7 +6,9 @@ export default function Experiencias() {
   const [experiencias, setExperiencias] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const URL = "http://localhost:3000/api/experiencias"
+  const [editExperiencia, setEditExperiencia] = useState(null); // Nueva experiencia en edición
+  const URL = "http://localhost:3000/api/experiencias";
+
   useEffect(() => {
     setLoading(true);
     const fetchExperiencias = async () => {
@@ -25,53 +27,92 @@ export default function Experiencias() {
   }, []);
 
   const handleExperienciaSubmit = async (newExperiencia) => {
-    //Crear experiencia
     try {
-        const response = await fetch(URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newExperiencia),
-        });
-  
-        if (!response.ok) {
-          throw new Error('Error al crear la experiencia');
-        }
-  
-        const data = await response.json();
-        setExperiencias([...experiencias, data]); // Actualiza la lista de experiencias
-      } catch (err) {
-        console.error(err.message);
+      const response = await fetch(URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newExperiencia),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear la experiencia');
       }
+
+      const data = await response.json();
+      setExperiencias([...experiencias, data]);
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
+
+  const handleEditSubmit = async (updatedExperiencia) => {
+    try {
+      const response = await fetch(`${URL}/${updatedExperiencia._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedExperiencia),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar la experiencia');
+      }
+
+      const data = await response.json();
+      setExperiencias(
+        experiencias.map((exp) =>
+          exp._id === updatedExperiencia._id ? data : exp
+        )
+      );
+      setEditExperiencia(null); // Limpia el formulario de edición
+    } catch (err) {
+      console.error(err.message);
+    }
   };
 
   const handleDeleteExperience = async (expId) => {
-    // Eliminar experiencia
     try {
-        const response = await fetch(`http://localhost:3000/api/experiencias/${expId}`, {
-          method: 'DELETE',
-        });
-  
-        if (!response.ok) {
-          throw new Error('Error al eliminar la experiencia');
-        }
-  
-        setExperiencias(experiencias.filter(exp => exp._id !== expId)); // Actualiza la lista
-      } catch (err) {
-        console.error(err);
+      const response = await fetch(`${URL}/${expId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar la experiencia');
       }
+
+      setExperiencias(experiencias.filter((exp) => exp._id !== expId));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleEditExperience = (exp) => {
+    setEditExperiencia(exp); // Establece la experiencia en edición
   };
 
   return (
-    <div className="form-container">
-      <h2-form>Gestión de Experiencias</h2-form>
+    <div>
+      <h1>Gestión de Experiencias</h1>
       {loading && <p>Cargando experiencias...</p>}
       {error && <p>Error: {error}</p>}
       {!loading && !error && (
         <>
-          <ExperienciaList experiencias={experiencias} onDeleteExperience={handleDeleteExperience} />
-          <ExperienciaForm onSubmit={handleExperienciaSubmit} />
+          <ExperienciaList
+            experiencias={experiencias}
+            onDeleteExperience={handleDeleteExperience}
+            onEditExperience={handleEditExperience} // Pasar función de edición
+          />
+          {editExperiencia ? (
+            <ExperienciaForm
+              onSubmit={handleEditSubmit}
+              initialData={editExperiencia} // Pasar datos iniciales al formulario
+            />
+          ) : (
+            <ExperienciaForm onSubmit={handleExperienciaSubmit} />
+          )}
         </>
       )}
     </div>
